@@ -5,6 +5,7 @@ export interface IUserDoc extends Document {
   email: string;
   password: string;
   role: 'admin' | 'manager';
+  adminId?: mongoose.Types.ObjectId;
   createdAt: Date;
 }
 
@@ -14,6 +15,7 @@ const UserSchema = new Schema<IUserDoc>(
     email: { type: String, required: true, unique: true, trim: true, lowercase: true },
     password: { type: String, required: true },
     role: { type: String, enum: ['admin', 'manager'], default: 'admin' },
+    adminId: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }
 );

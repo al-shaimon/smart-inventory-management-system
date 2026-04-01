@@ -3,7 +3,7 @@ import dbConnect from '@/lib/db';
 import { getSession } from '@/lib/session';
 import Product from '@/models/Product';
 import RestockQueue from '@/models/RestockQueue';
-import { ProductSchema } from '@/lib/definitions';
+import { IPopulatedProduct, ProductSchema } from '@/lib/definitions';
 import { logActivity } from '@/lib/activity';
 
 function getRestockPriority(stock: number, threshold: number): 'High' | 'Medium' | 'Low' {
@@ -24,9 +24,9 @@ export async function GET(
     const { id } = await params;
     await dbConnect();
 
-    const product = await Product.findOne({ _id: id, userId: session.userId })
+    const product = await Product.findOne({ _id: id, adminId: session.adminId })
       .populate('category', 'name')
-      .lean();
+      .lean() as IPopulatedProduct | null;
 
     if (!product) {
       return Response.json({ error: 'Product not found' }, { status: 404 });
@@ -35,7 +35,10 @@ export async function GET(
     return Response.json({
       ...product,
       _id: String(product._id),
-      userId: String(product.userId),
+      adminId: String(product.adminId),
+      category: product.category
+        ? { _id: String(product.category._id), name: product.category.name }
+        : null,
     });
   } catch (error) {
     console.error('Product GET error:', error);
@@ -64,7 +67,7 @@ export async function PUT(
     const { name, category, price, stockQuantity, minStockThreshold } = parsed.data;
 
     const product = await Product.findOneAndUpdate(
-      { _id: id, userId: session.userId },
+      { _id: id, adminId: session.adminId },
       {
         name,
         category,
@@ -89,7 +92,7 @@ export async function PUT(
           currentStock: stockQuantity,
           threshold: minStockThreshold,
           priority: getRestockPriority(stockQuantity, minStockThreshold),
-          userId: session.userId,
+          adminId: session.adminId,
         },
         { upsert: true, new: true }
       );
@@ -97,9 +100,9 @@ export async function PUT(
       await RestockQueue.deleteOne({ product: product._id });
     }
 
-    await logActivity(`Product "${product.name}" updated`, 'Product', session.userId, id);
+    await logActivity(`Product "${product.name}" updated`, 'Product', session.adminId, id);
 
-    return Response.json({ ...product.toObject(), _id: String(product._id), userId: String(product.userId) });
+    return Response.json({ ...product.toObject(), _id: String(product._id), adminId: String(product.adminId) });
   } catch (error) {
     console.error('Product PUT error:', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
@@ -118,7 +121,7 @@ export async function DELETE(
     const { id } = await params;
     await dbConnect();
 
-    const product = await Product.findOneAndDelete({ _id: id, userId: session.userId });
+    const product = await Product.findOneAndDelete({ _id: id, adminId: session.adminId });
     if (!product) {
       return Response.json({ error: 'Product not found' }, { status: 404 });
     }
@@ -126,7 +129,7 @@ export async function DELETE(
     // Remove from restock queue
     await RestockQueue.deleteOne({ product: id });
 
-    await logActivity(`Product "${product.name}" deleted`, 'Product', session.userId, id);
+    await logActivity(`Product "${product.name}" deleted`, 'Product', session.adminId, id);
 
     return Response.json({ message: 'Product deleted' });
   } catch (error) {

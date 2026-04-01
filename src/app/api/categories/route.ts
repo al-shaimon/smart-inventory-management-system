@@ -11,11 +11,11 @@ export async function GET() {
     if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     await dbConnect();
-    const categories = await Category.find({ userId: session.userId })
+    const categories = await Category.find({ adminId: session.adminId })
       .sort({ createdAt: -1 })
       .lean();
 
-    return Response.json(categories.map((c) => ({ ...c, _id: String(c._id), userId: String(c.userId) })));
+    return Response.json(categories.map((c) => ({ ...c, _id: String(c._id), adminId: String(c.adminId) })));
   } catch (error) {
     console.error('Categories GET error:', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     // Check for duplicates
     const existing = await Category.findOne({
       name: { $regex: new RegExp(`^${parsed.data.name}$`, 'i') },
-      userId: session.userId,
+      adminId: session.adminId,
     });
     if (existing) {
       return Response.json({ error: 'Category already exists' }, { status: 409 });
@@ -47,13 +47,13 @@ export async function POST(request: NextRequest) {
 
     const category = await Category.create({
       name: parsed.data.name,
-      userId: session.userId,
+      adminId: session.adminId,
     });
 
-    await logActivity(`Category "${category.name}" created`, 'Category', session.userId, category._id.toString());
+    await logActivity(`Category "${category.name}" created`, 'Category', session.adminId, category._id.toString());
 
     return Response.json(
-      { ...category.toObject(), _id: String(category._id), userId: String(category.userId) },
+      { ...category.toObject(), _id: String(category._id), adminId: String(category.adminId) },
       { status: 201 }
     );
   } catch (error) {

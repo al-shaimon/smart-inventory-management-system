@@ -27,14 +27,14 @@ export async function PUT(
     const existing = await Category.findOne({
       _id: { $ne: id },
       name: { $regex: new RegExp(`^${parsed.data.name}$`, 'i') },
-      userId: session.userId,
+      adminId: session.adminId,
     });
     if (existing) {
       return Response.json({ error: 'Category name already exists' }, { status: 409 });
     }
 
     const category = await Category.findOneAndUpdate(
-      { _id: id, userId: session.userId },
+      { _id: id, adminId: session.adminId },
       { name: parsed.data.name },
       { new: true }
     );
@@ -43,9 +43,9 @@ export async function PUT(
       return Response.json({ error: 'Category not found' }, { status: 404 });
     }
 
-    await logActivity(`Category updated to "${category.name}"`, 'Category', session.userId, id);
+    await logActivity(`Category updated to "${category.name}"`, 'Category', session.adminId, id);
 
-    return Response.json({ ...category.toObject(), _id: String(category._id), userId: String(category.userId) });
+    return Response.json({ ...category.toObject(), _id: String(category._id), adminId: String(category.adminId) });
   } catch (error) {
     console.error('Category PUT error:', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
@@ -64,12 +64,12 @@ export async function DELETE(
     const { id } = await params;
     await dbConnect();
 
-    const category = await Category.findOneAndDelete({ _id: id, userId: session.userId });
+    const category = await Category.findOneAndDelete({ _id: id, adminId: session.adminId });
     if (!category) {
       return Response.json({ error: 'Category not found' }, { status: 404 });
     }
 
-    await logActivity(`Category "${category.name}" deleted`, 'Category', session.userId, id);
+    await logActivity(`Category "${category.name}" deleted`, 'Category', session.adminId, id);
 
     return Response.json({ message: 'Category deleted' });
   } catch (error) {

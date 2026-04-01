@@ -4,7 +4,7 @@ export interface IActivityLogDoc extends Document {
   action: string;
   entityType: 'Order' | 'Product' | 'Restock' | 'Category' | 'Auth';
   entityId?: string;
-  userId: mongoose.Types.ObjectId;
+  adminId: mongoose.Types.ObjectId;
   createdAt: Date;
 }
 
@@ -17,13 +17,15 @@ const ActivityLogSchema = new Schema<IActivityLogDoc>(
       required: true,
     },
     entityId: { type: String },
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    adminId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: true }
 );
 
 ActivityLogSchema.index({ createdAt: -1 });
 
-const ActivityLog =
-  mongoose.models.ActivityLog || mongoose.model<IActivityLogDoc>('ActivityLog', ActivityLogSchema);
+if (mongoose.models.ActivityLog) {
+  delete mongoose.models.ActivityLog;
+}
+const ActivityLog = mongoose.model<IActivityLogDoc>('ActivityLog', ActivityLogSchema);
 export default ActivityLog;

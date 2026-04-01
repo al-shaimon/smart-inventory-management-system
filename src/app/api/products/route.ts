@@ -3,7 +3,7 @@ import dbConnect from '@/lib/db';
 import { getSession } from '@/lib/session';
 import Product from '@/models/Product';
 import RestockQueue from '@/models/RestockQueue';
-import { ProductSchema } from '@/lib/definitions';
+import { IPopulatedProduct, ProductSchema } from '@/lib/definitions';
 import { logActivity } from '@/lib/activity';
 
 function getRestockPriority(stock: number, threshold: number): 'High' | 'Medium' | 'Low' {
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
 
     // Build filter
-    const filter: Record<string, unknown> = { userId: session.userId };
+    const filter: { adminId: string; name?: { $regex: string; $options: string }; category?: string; status?: string } = { adminId: session.adminId };
     if (search) {
       filter.name = { $regex: search, $options: 'i' };
     }
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit)
-        .lean(),
+        .lean() as unknown as Promise<IPopulatedProduct[]>,
       Product.countDocuments(filter),
     ]);
 
@@ -53,9 +53,9 @@ export async function GET(request: NextRequest) {
       products: products.map((p) => ({
         ...p,
         _id: String(p._id),
-        userId: String(p.userId),
+        adminId: String(p.adminId),
         category: p.category
-          ? { _id: String((p.category as Record<string, unknown>)._id), name: (p.category as Record<string, unknown>).name }
+          ? { _id: String(p.category._id), name: p.category.name }
           : null,
       })),
       pagination: {
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       stockQuantity,
       minStockThreshold,
       status: stockQuantity === 0 ? 'Out of Stock' : 'Active',
-      userId: session.userId,
+      adminId: session.adminId,
     });
 
     // Auto-add to restock queue if stock below threshold
@@ -106,16 +106,16 @@ export async function POST(request: NextRequest) {
           currentStock: stockQuantity,
           threshold: minStockThreshold,
           priority: getRestockPriority(stockQuantity, minStockThreshold),
-          userId: session.userId,
+          adminId: session.adminId,
         },
         { upsert: true, new: true }
       );
     }
 
-    await logActivity(`Product "${product.name}" added`, 'Product', session.userId, product._id.toString());
+    await logActivity(`Product "${product.name}" added`, 'Product', session.adminId, product._id.toString());
 
     return Response.json(
-      { ...product.toObject(), _id: String(product._id), userId: String(product.userId) },
+      { ...product.toObject(), _id: String(product._id), adminId: String(product.adminId) },
       { status: 201 }
     );
   } catch (error) {

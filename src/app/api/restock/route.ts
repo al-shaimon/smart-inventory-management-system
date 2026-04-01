@@ -3,6 +3,7 @@ import dbConnect from '@/lib/db';
 import { getSession } from '@/lib/session';
 import RestockQueue from '@/models/RestockQueue';
 import Product from '@/models/Product';
+import { IPopulatedRestockQueue } from '@/lib/definitions';
 import { logActivity } from '@/lib/activity';
 
 export async function GET() {
@@ -12,20 +13,20 @@ export async function GET() {
 
     await dbConnect();
 
-    const queue = await RestockQueue.find({ userId: session.userId })
+    const queue = await RestockQueue.find({ adminId: session.adminId })
       .populate('product', 'name price stockQuantity minStockThreshold status category')
       .sort({ currentStock: 1 })
-      .lean();
+      .lean() as unknown as IPopulatedRestockQueue[];
 
     return Response.json(
       queue.map((item) => ({
         ...item,
         _id: String(item._id),
-        userId: String(item.userId),
+        adminId: String(item.adminId),
         product: item.product
           ? {
-              ...item.product as Record<string, unknown>,
-              _id: String((item.product as Record<string, unknown>)._id),
+              ...item.product,
+              _id: String(item.product._id),
             }
           : null,
       }))
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     await dbConnect();
 
-    const product = await Product.findOne({ _id: productId, userId: session.userId });
+    const product = await Product.findOne({ _id: productId, adminId: session.adminId });
     if (!product) return Response.json({ error: 'Product not found' }, { status: 404 });
 
     const newStock = product.stockQuantity + quantity;
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
     await logActivity(
       `Stock updated for "${product.name}" (+${quantity} units)`,
       'Restock',
-      session.userId,
+      session.adminId,
       productId
     );
 

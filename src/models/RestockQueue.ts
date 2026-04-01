@@ -5,7 +5,7 @@ export interface IRestockQueueDoc extends Document {
   currentStock: number;
   threshold: number;
   priority: 'High' | 'Medium' | 'Low';
-  userId: mongoose.Types.ObjectId;
+  adminId: mongoose.Types.ObjectId;
   createdAt: Date;
 }
 
@@ -15,11 +15,13 @@ const RestockQueueSchema = new Schema<IRestockQueueDoc>(
     currentStock: { type: Number, required: true, min: 0 },
     threshold: { type: Number, required: true, min: 0 },
     priority: { type: String, enum: ['High', 'Medium', 'Low'], default: 'Medium' },
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    adminId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: true }
 );
 
-const RestockQueue =
-  mongoose.models.RestockQueue || mongoose.model<IRestockQueueDoc>('RestockQueue', RestockQueueSchema);
+if (mongoose.models.RestockQueue) {
+  delete mongoose.models.RestockQueue;
+}
+const RestockQueue = mongoose.model<IRestockQueueDoc>('RestockQueue', RestockQueueSchema);
 export default RestockQueue;

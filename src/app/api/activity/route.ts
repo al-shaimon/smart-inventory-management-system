@@ -9,7 +9,7 @@ export async function GET() {
 
     await dbConnect();
 
-    const activities = await ActivityLog.find({ userId: session.userId })
+    const activities = await ActivityLog.find({ adminId: session.adminId })
       .sort({ createdAt: -1 })
       .limit(20)
       .lean();
@@ -18,7 +18,7 @@ export async function GET() {
       activities.map((a) => ({
         ...a,
         _id: String(a._id),
-        userId: String(a.userId),
+        adminId: String(a.adminId),
       }))
     );
   } catch (error) {

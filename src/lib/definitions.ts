@@ -78,32 +78,41 @@ export interface IUser {
   email: string;
   password: string;
   role: 'admin' | 'manager';
+  adminId?: string;
   createdAt: Date;
 }
 
 export interface ICategory {
   _id: string;
   name: string;
-  userId: string;
+  adminId: string;
   createdAt: Date;
 }
 
 export interface IProduct {
   _id: string;
   name: string;
-  category: string | ICategory;
+  category: string;
   price: number;
   stockQuantity: number;
   minStockThreshold: number;
   status: ProductStatus;
-  userId: string;
+  adminId: string;
   createdAt: Date;
 }
 
+export interface IPopulatedProduct extends Omit<IProduct, 'category'> {
+  category: { _id: string; name: string };
+}
+
 export interface IOrderItem {
-  product: string | IProduct;
+  product: string;
   quantity: number;
   price: number;
+}
+
+export interface IPopulatedOrderItem extends Omit<IOrderItem, 'product'> {
+  product: { _id: string; name: string };
 }
 
 export interface IOrder {
@@ -113,18 +122,26 @@ export interface IOrder {
   items: IOrderItem[];
   totalPrice: number;
   status: OrderStatus;
-  userId: string;
+  adminId: string;
   createdAt: Date;
+}
+
+export interface IPopulatedOrder extends Omit<IOrder, 'items'> {
+  items: IPopulatedOrderItem[];
 }
 
 export interface IRestockQueue {
   _id: string;
-  product: string | IProduct;
+  product: string;
   currentStock: number;
   threshold: number;
   priority: RestockPriority;
-  userId: string;
+  adminId: string;
   createdAt: Date;
+}
+
+export interface IPopulatedRestockQueue extends Omit<IRestockQueue, 'product'> {
+  product: IPopulatedProduct;
 }
 
 export interface IActivityLog {
@@ -132,6 +149,6 @@ export interface IActivityLog {
   action: string;
   entityType: 'Order' | 'Product' | 'Restock' | 'Category' | 'Auth';
   entityId?: string;
-  userId: string;
+  adminId: string;
   createdAt: Date;
 }

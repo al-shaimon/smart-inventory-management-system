@@ -4,6 +4,7 @@ import { getSession } from '@/lib/session';
 import Order from '@/models/Order';
 import Product from '@/models/Product';
 import RestockQueue from '@/models/RestockQueue';
+import { IPopulatedOrder } from '@/lib/definitions';
 import { logActivity } from '@/lib/activity';
 
 function getRestockPriority(stock: number, threshold: number): 'High' | 'Medium' | 'Low' {
@@ -24,16 +25,22 @@ export async function GET(
     const { id } = await params;
     await dbConnect();
 
-    const order = await Order.findOne({ _id: id, userId: session.userId })
+    const order = await Order.findOne({ _id: id, adminId: session.adminId })
       .populate('items.product', 'name price stockQuantity status')
-      .lean();
+      .lean() as unknown as IPopulatedOrder | null;
 
     if (!order) return Response.json({ error: 'Order not found' }, { status: 404 });
 
     return Response.json({
       ...order,
       _id: String(order._id),
-      userId: String(order.userId),
+      adminId: String(order.adminId),
+      items: order.items.map((item) => ({
+        ...item,
+        product: item.product
+          ? { _id: String(item.product._id), name: item.product.name }
+          : null,
+      })),
     });
   } catch (error) {
     console.error('Order GET error:', error);
@@ -60,7 +67,7 @@ export async function PUT(
 
     await dbConnect();
 
-    const order = await Order.findOne({ _id: id, userId: session.userId });
+    const order = await Order.findOne({ _id: id, adminId: session.adminId });
     if (!order) return Response.json({ error: 'Order not found' }, { status: 404 });
 
     const oldStatus = order.status;
@@ -98,14 +105,14 @@ export async function PUT(
     await logActivity(
       `Order #${order.orderNumber} marked as ${status}`,
       'Order',
-      session.userId,
+      session.adminId,
       id
     );
 
     return Response.json({
       ...order.toObject(),
       _id: String(order._id),
-      userId: String(order.userId),
+      adminId: String(order.adminId),
     });
   } catch (error) {
     console.error('Order PUT error:', error);

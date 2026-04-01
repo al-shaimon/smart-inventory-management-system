@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
+import Invite from '@/models/Invite';
 import { createSession, deleteSession } from '@/lib/session';
 import { SignupFormSchema, LoginFormSchema, FormState } from '@/lib/definitions';
 import { logActivity } from '@/lib/activity';
@@ -35,14 +36,28 @@ export async function signup(state: FormState, formData: FormData): Promise<Form
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  const user = await User.create({
+  const invite = await Invite.findOne({ email });
+
+  const role: 'admin' | 'manager' = invite ? 'manager' : 'admin';
+
+  const user = new User({
     name,
     email,
     password: hashedPassword,
+    role,
   });
 
+  if (invite) {
+    user.adminId = invite.adminId;
+    await Invite.deleteOne({ _id: invite._id });
+  } else {
+    user.adminId = user._id;
+  }
+
+  await user.save();
+
   await logActivity('New user signed up', 'Auth', user._id.toString());
-  await createSession(user._id.toString(), user.name, user.email, user.role);
+  await createSession(user._id.toString(), user.name, user.email, user.role, user.adminId.toString());
   redirect('/dashboard');
 }
 
@@ -77,7 +92,7 @@ export async function login(state: FormState, formData: FormData): Promise<FormS
   }
 
   await logActivity('User logged in', 'Auth', user._id.toString());
-  await createSession(user._id.toString(), user.name, user.email, user.role);
+  await createSession(user._id.toString(), user.name, user.email, user.role, user.adminId.toString());
   redirect('/dashboard');
 }
 

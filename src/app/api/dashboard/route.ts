@@ -4,7 +4,8 @@ import { getSession } from '@/lib/session';
 import Order from '@/models/Order';
 import Product from '@/models/Product';
 import RestockQueue from '@/models/RestockQueue';
-import ActivityLog from '@/models/ActivityLog';
+import ActivityLog, { IActivityLogDoc } from '@/models/ActivityLog';
+import mongoose from 'mongoose';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     await dbConnect();
-    const userId = session.userId;
+    const adminId = session.adminId;
 
     const now = new Date();
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -38,20 +39,20 @@ export async function GET(request: NextRequest) {
     ] = await Promise.all([
       // Total orders today
       Order.countDocuments({
-        userId,
+        adminId,
         createdAt: { $gte: startOfDay, $lt: endOfDay },
       }),
       // Pending orders
-      Order.countDocuments({ userId, status: 'Pending' }),
+      Order.countDocuments({ adminId, status: 'Pending' }),
       // Completed (Delivered) orders
-      Order.countDocuments({ userId, status: 'Delivered' }),
+      Order.countDocuments({ adminId, status: 'Delivered' }),
       // Low stock items
-      RestockQueue.countDocuments({ userId }),
+      RestockQueue.countDocuments({ adminId }),
       // Revenue today
       Order.aggregate([
         {
           $match: {
-            userId: (await import('mongoose')).default.Types.ObjectId.createFromHexString(userId),
+            adminId: new mongoose.Types.ObjectId(adminId),
             createdAt: { $gte: startOfDay, $lt: endOfDay },
             status: { $ne: 'Cancelled' },
           },
@@ -59,13 +60,13 @@ export async function GET(request: NextRequest) {
         { $group: { _id: null, total: { $sum: '$totalPrice' } } },
       ]),
       // Product summary (first 10)
-      Product.find({ userId })
+      Product.find({ adminId })
         .select('name stockQuantity minStockThreshold status')
         .sort({ stockQuantity: 1 })
         .limit(10)
         .lean(),
       // Recent activities
-      ActivityLog.find({ userId })
+      ActivityLog.find({ adminId })
         .sort({ createdAt: -1 })
         .limit(5)
         .lean(),
@@ -73,7 +74,7 @@ export async function GET(request: NextRequest) {
       Order.aggregate([
         {
           $match: {
-            userId: (await import('mongoose')).default.Types.ObjectId.createFromHexString(userId),
+            adminId: new mongoose.Types.ObjectId(adminId),
             createdAt: { $gte: chartStart },
           },
         },
@@ -109,10 +110,10 @@ export async function GET(request: NextRequest) {
       lowStockCount,
       revenueToday: revenueToday[0]?.total || 0,
       productSummary,
-      recentActivity: recentActivity.map((a: Record<string, unknown>) => ({
+      recentActivity: recentActivity.map((a: IActivityLogDoc) => ({
         ...a,
         _id: String(a._id),
-        userId: String(a.userId),
+        adminId: String(a.adminId),
       })),
       chartData: filledChartData,
     });

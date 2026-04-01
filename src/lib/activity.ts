@@ -4,7 +4,7 @@ import ActivityLog from '@/models/ActivityLog';
 export async function logActivity(
   action: string,
   entityType: 'Order' | 'Product' | 'Restock' | 'Category' | 'Auth',
-  userId: string,
+  adminId: string,
   entityId?: string
 ) {
   try {
@@ -13,7 +13,7 @@ export async function logActivity(
       action,
       entityType,
       entityId,
-      userId,
+      adminId,
     });
   } catch (error) {
     console.error('Failed to log activity:', error);

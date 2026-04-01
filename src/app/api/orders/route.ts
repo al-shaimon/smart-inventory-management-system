@@ -4,7 +4,7 @@ import { getSession } from '@/lib/session';
 import Order from '@/models/Order';
 import Product from '@/models/Product';
 import RestockQueue from '@/models/RestockQueue';
-import { OrderSchema } from '@/lib/definitions';
+import { IPopulatedOrder, OrderSchema } from '@/lib/definitions';
 import { logActivity } from '@/lib/activity';
 
 function getRestockPriority(stock: number, threshold: number): 'High' | 'Medium' | 'Low' {
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
 
-    const filter: Record<string, unknown> = { userId: session.userId };
+    const filter: { adminId: string; orderNumber?: number; customerName?: { $regex: string; $options: string }; status?: string; createdAt?: { $gte?: Date; $lte?: Date } } = { adminId: session.adminId };
 
     if (search) {
       const orderNum = parseInt(search);
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit)
-        .lean(),
+        .lean() as unknown as Promise<IPopulatedOrder[]>,
       Order.countDocuments(filter),
     ]);
 
@@ -62,11 +62,11 @@ export async function GET(request: NextRequest) {
       orders: orders.map((o) => ({
         ...o,
         _id: String(o._id),
-        userId: String(o.userId),
-        items: o.items.map((item: Record<string, unknown>) => ({
+        adminId: String(o.adminId),
+        items: o.items.map((item) => ({
           ...item,
           product: item.product
-            ? { _id: String((item.product as Record<string, unknown>)._id), name: (item.product as Record<string, unknown>).name }
+            ? { _id: String(item.product._id), name: item.product.name }
             : null,
         })),
       })),
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate all products and check stock
-    const products = await Product.find({ _id: { $in: productIds }, userId: session.userId });
+    const products = await Product.find({ _id: { $in: productIds }, adminId: session.adminId });
 
     if (products.length !== productIds.length) {
       return Response.json(
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
       items: orderItems,
       totalPrice,
       status: 'Pending',
-      userId: session.userId,
+      adminId: session.adminId,
     });
 
     // Deduct stock and update product status / restock queue
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
             currentStock: newStock,
             threshold: product.minStockThreshold,
             priority: getRestockPriority(newStock, product.minStockThreshold),
-            userId: session.userId,
+            adminId: session.adminId,
           },
           { upsert: true, new: true }
         );
@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
           await logActivity(
             `Product "${product.name}" added to Restock Queue`,
             'Restock',
-            session.userId,
+            session.adminId,
             product._id.toString()
           );
         }
@@ -193,12 +193,12 @@ export async function POST(request: NextRequest) {
     await logActivity(
       `Order #${order.orderNumber} created by user`,
       'Order',
-      session.userId,
+      session.adminId,
       order._id.toString()
     );
 
     return Response.json(
-      { ...order.toObject(), _id: String(order._id), userId: String(order.userId) },
+      { ...order.toObject(), _id: String(order._id), adminId: String(order.adminId) },
       { status: 201 }
     );
   } catch (error) {

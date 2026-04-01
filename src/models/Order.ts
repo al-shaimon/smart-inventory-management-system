@@ -12,7 +12,7 @@ export interface IOrderDoc extends Document {
   items: IOrderItemDoc[];
   totalPrice: number;
   status: 'Pending' | 'Confirmed' | 'Shipped' | 'Delivered' | 'Cancelled';
-  userId: mongoose.Types.ObjectId;
+  adminId: mongoose.Types.ObjectId;
   createdAt: Date;
 }
 
@@ -36,7 +36,7 @@ const OrderSchema = new Schema<IOrderDoc>(
       enum: ['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'],
       default: 'Pending',
     },
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    adminId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: true }
 );
@@ -45,12 +45,15 @@ const OrderSchema = new Schema<IOrderDoc>(
 OrderSchema.pre('save', async function () {
   if (this.isNew && !this.orderNumber) {
     const lastOrder = await mongoose.models.Order
-      .findOne({}, { orderNumber: 1 })
+      .findOne({ adminId: this.adminId }, { orderNumber: 1 })
       .sort({ orderNumber: -1 })
       .lean();
     this.orderNumber = lastOrder ? (lastOrder as IOrderDoc).orderNumber + 1 : 1001;
   }
 });
 
-const Order = mongoose.models.Order || mongoose.model<IOrderDoc>('Order', OrderSchema);
+if (mongoose.models.Order) {
+  delete mongoose.models.Order;
+}
+const Order = mongoose.model<IOrderDoc>('Order', OrderSchema);
 export default Order;

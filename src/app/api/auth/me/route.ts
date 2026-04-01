@@ -8,6 +8,7 @@ export async function GET() {
     userId: session.userId,
     name: session.name,
     email: session.email,
-    role: session.role
+    role: session.role,
+    adminId: session.adminId
   });
 }

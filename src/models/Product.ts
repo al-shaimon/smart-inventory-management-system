@@ -7,7 +7,7 @@ export interface IProductDoc extends Document {
   stockQuantity: number;
   minStockThreshold: number;
   status: 'Active' | 'Out of Stock';
-  userId: mongoose.Types.ObjectId;
+  adminId: mongoose.Types.ObjectId;
   createdAt: Date;
 }
 
@@ -19,12 +19,15 @@ const ProductSchema = new Schema<IProductDoc>(
     stockQuantity: { type: Number, required: true, min: 0, default: 0 },
     minStockThreshold: { type: Number, required: true, min: 0, default: 5 },
     status: { type: String, enum: ['Active', 'Out of Stock'], default: 'Active' },
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    adminId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: true }
 );
 
 ProductSchema.index({ name: 'text' });
 
-const Product = mongoose.models.Product || mongoose.model<IProductDoc>('Product', ProductSchema);
+if (mongoose.models.Product) {
+  delete mongoose.models.Product;
+}
+const Product = mongoose.model<IProductDoc>('Product', ProductSchema);
 export default Product;
