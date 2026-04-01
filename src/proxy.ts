@@ -46,6 +46,11 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
+  // Block manager from accessing activity log
+  if (path.startsWith('/activity') && session?.role === 'manager') {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
   return NextResponse.next();
 }
 

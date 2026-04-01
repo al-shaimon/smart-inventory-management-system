@@ -42,7 +42,7 @@ export async function signup(state: FormState, formData: FormData): Promise<Form
   });
 
   await logActivity('New user signed up', 'Auth', user._id.toString());
-  await createSession(user._id.toString(), user.name, user.email);
+  await createSession(user._id.toString(), user.name, user.email, user.role);
   redirect('/dashboard');
 }
 
@@ -77,7 +77,7 @@ export async function login(state: FormState, formData: FormData): Promise<FormS
   }
 
   await logActivity('User logged in', 'Auth', user._id.toString());
-  await createSession(user._id.toString(), user.name, user.email);
+  await createSession(user._id.toString(), user.name, user.email, user.role);
   redirect('/dashboard');
 }
 

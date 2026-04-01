@@ -50,6 +50,7 @@ export async function PUT(
   try {
     const session = await getSession();
     if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (session.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 });
 
     const { id } = await params;
     const body = await request.json();
@@ -112,6 +113,7 @@ export async function DELETE(
   try {
     const session = await getSession();
     if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (session.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 });
 
     const { id } = await params;
     await dbConnect();

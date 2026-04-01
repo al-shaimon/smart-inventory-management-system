@@ -43,7 +43,7 @@ const OrderSchema = new Schema<IOrderDoc>(
 
 // Auto-increment orderNumber
 OrderSchema.pre('save', async function () {
-  if (this.isNew) {
+  if (this.isNew && !this.orderNumber) {
     const lastOrder = await mongoose.models.Order
       .findOne({}, { orderNumber: 1 })
       .sort({ orderNumber: -1 })

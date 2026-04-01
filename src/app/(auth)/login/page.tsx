@@ -14,8 +14,13 @@ export default function LoginPage() {
     emailRef.current?.focus();
   }, []);
 
-  const handleDemoLogin = () => {
-    if (emailRef.current) emailRef.current.value = 'demo@inventory.com';
+  const handleAdminDemoLogin = () => {
+    if (emailRef.current) emailRef.current.value = 'admin@inventory.com';
+    if (passwordRef.current) passwordRef.current.value = 'Demo@1234';
+  };
+
+  const handleManagerDemoLogin = () => {
+    if (emailRef.current) emailRef.current.value = 'manager@inventory.com';
     if (passwordRef.current) passwordRef.current.value = 'Demo@1234';
   };
 
@@ -89,11 +94,11 @@ export default function LoginPage() {
         </button>
       </form>
 
-      {/* Demo Login */}
-      <div className="mt-4">
+      {/* Demo Logins */}
+      <div className="mt-4 flex flex-col gap-2">
         <button
           type="button"
-          onClick={handleDemoLogin}
+          onClick={handleAdminDemoLogin}
           className="btn btn-secondary w-full"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -101,7 +106,19 @@ export default function LoginPage() {
             <polyline points="10 17 15 12 10 7" />
             <line x1="15" y1="12" x2="3" y2="12" />
           </svg>
-          Fill Demo Credentials
+          Fill Demo Admin
+        </button>
+        <button
+          type="button"
+          onClick={handleManagerDemoLogin}
+          className="btn btn-secondary w-full"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+            <polyline points="10 17 15 12 10 7" />
+            <line x1="15" y1="12" x2="3" y2="12" />
+          </svg>
+          Fill Demo Manager
         </button>
       </div>
 

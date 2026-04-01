@@ -7,6 +7,7 @@ import { logout } from '@/app/actions/auth';
 interface SidebarProps {
   userName: string;
   userEmail: string;
+  userRole: 'admin' | 'manager';
   isOpen: boolean;
   onClose: () => void;
 }
@@ -77,7 +78,7 @@ const navItems = [
   },
 ];
 
-export default function Sidebar({ userName, userEmail, isOpen, onClose }: SidebarProps) {
+export default function Sidebar({ userName, userEmail, userRole, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -128,34 +129,43 @@ export default function Sidebar({ userName, userEmail, isOpen, onClose }: Sideba
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
-                className={`sidebar-link ${isActive ? 'active' : ''}`}
-              >
-                {item.icon}
-                {item.label}
-              </Link>
-            );
-          })}
+          {navItems
+            .filter((item) => userRole === 'admin' || item.href !== '/activity')
+            .map((item) => {
+              const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onClose}
+                  className={`sidebar-link ${isActive ? 'active' : ''}`}
+                >
+                  {item.icon}
+                  {item.label}
+                </Link>
+              );
+            })}
         </nav>
 
         {/* User section */}
         <div className="px-3 py-4" style={{ borderTop: '1px solid var(--border-color)' }}>
-          <div className="flex items-center gap-3 px-2 mb-3">
-            <div
-              className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold"
-              style={{ background: 'var(--accent-light)', color: 'var(--accent-hover)' }}
-            >
-              {userName?.charAt(0)?.toUpperCase() || 'U'}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{userName}</p>
-              <p className="text-xs truncate" style={{ color: 'var(--muted-fg)' }}>{userEmail}</p>
+          <div className="flex flex-col gap-2 mb-3">
+            <div className="flex items-center gap-3 px-2">
+              <div
+                className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold shrink-0"
+                style={{ background: 'var(--accent-light)', color: 'var(--accent-hover)' }}
+              >
+                {userName?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium truncate">{userName}</p>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider ${userRole === 'admin' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                    {userRole}
+                  </span>
+                </div>
+                <p className="text-xs truncate" style={{ color: 'var(--muted-fg)' }}>{userEmail}</p>
+              </div>
             </div>
           </div>
           <form action={logout}>
