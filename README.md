@@ -1,106 +1,92 @@
 # Smart Inventory & Order Management System
 
-A full-stack web application to manage products, stock levels, customer orders, and fulfillment workflows with real-time validation, conflict handling, and automated low-stock tracking.
+A professional, multi-tenant inventory and order management platform built with human-centric design, strict type safety, and robust data isolation. This system empowers Store Admins to manage products, categories, and orders while collaborating with a distributed team of Managers.
+
+---
 
 ## 🚀 Tech Stack
 
-- **Framework**: Next.js 16 (App Router)
-- **Database**: MongoDB (via Mongoose)
-- **Styling**: Tailwind CSS v4
-- **State & Data Fetching**: React Server Components & Server Actions
-- **Authentication**: JWT (JSON Web Tokens) with `jose` and `bcryptjs`, managed via HTTP-only edge cookies.
-- **Form Validation**: Zod
-- **Charts**: Recharts
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router, Server Actions, Middleware)
+- **Database**: [MongoDB](https://www.mongodb.com/) (Mongoose ODM)
+- **Styling**: [Vanilla CSS](https://developer.mozilla.org/en-US/docs/Web/CSS) (Modern Custom Properties, Glassmorphism)
+- **State & Logic**: Strict [TypeScript](https://www.typescriptlang.org/) (Zero `any` implementation)
+- **Authentication**: JWT-based session management with `jose` and `bcryptjs`
+- **Validation**: [Zod](https://zod.dev/) for high-integrity schema validation
+- **Visualization**: [Recharts](https://recharts.org/) for predictive analytics
+
+---
 
 ## ✨ Features Implemented
 
-### Core Requirements
+### 🏢 Store Multitenancy & RBAC
+- **Strict Data Isolation**: Every piece of data (Products, Orders, Categories, Logs) is scoped to a unique `adminId` (Store ID).
+- **Role-Based Access Control (RBAC)**: Distinct permissions for `admin` and `manager` roles.
+- **Team Management**: Admins can invite Managers via email. The system automatically binds new Manager signups to the inviter's store.
 
-1. **Authentication**: Secure email/password login and signup with a pre-filled **Demo Login** button. Edge middleware protects dashboard routes.
-2. **Product & Category Setup**: Full CRUD capabilities for Categories and Products. Tracks stock, prices, minimum stock thresholds, and Active/Out-of-Stock statuses.
-3. **Order Management**: Create new orders, manage quantities, calculate totals automatically, and track statuses (Pending, Confirmed, Shipped, Delivered, Cancelled).
-4. **Stock Handling**: Automatically deducts stock upon order creation, prevents submission if stock is insufficient, and sets products to "Out of Stock" when inventory hits 0.
-5. **Restock Queue**: Automatically adds items dropping below their threshold to a priority-sorted (High/Medium/Low) queue, supporting manual restock fulfillment.
-6. **Conflict Detection**: Prevents adding duplicate products to a single order and blocks the ordering of inactive/unavailable products.
-7. **Dashboard Analytics**: Overview cards showing Total Orders Today, Pending Orders, Low Stock Items, Revenue Today, and a Product Status Summary table.
-8. **Activity Log**: Centralized timeline tracking all major system actions (Order placements, Stock updates, Authentication events, etc.).
+### 📦 Product & Inventory Lifecycle
+- **Dynamic Catalog**: Full CRUD for Products and Categories with real-time stock tracking.
+- **Stock Automation**: Intelligent status transitions (Active/Out-of-Stock) and automatic inventory deductions.
+- **Restock Intelligence**: A priority-sorted queue (High/Medium/Low) for products hitting critical stock thresholds.
 
-### Bonus Features
+### 🛒 Order Fulfillment Workflow
+- **Sophisticated Checkout**: Conflict detection prevents duplicate product additions and blocks unavailable items.
+- **Status Tracking**: Full lifecycle management: `Pending` → `Confirmed` → `Shipped` → `Delivered` (with `Cancelled` restoration).
+- **Automatic Restoration**: Cancelling an order automatically restores stock levels and updates the restock queue.
 
-- **Search & Filter**: Real-time searching and status/category filtering on the Products and Orders pages.
-- **Pagination**: Navigate cleanly through large datasets of Products and Orders.
-- **Analytics Chart**: Visual Recharts bar-chart representing orders placed over the last 7 days.
-- **Modern UI/UX**: Fully responsive, dark-mode focused interface with glassmorphism UI elements and smooth micro-interactions.
+### 📊 Real-time Monitoring
+- **Store Analytics**: Instant metrics for Orders Today, Pending Orders, Low Stock Items, and Daily Revenue.
+- **7-Day Trend Analytics**: Visual representation of order volume and revenue growth.
+- **Audit Trails**: Detailed `Activity Log` tracking every administrative and operational action.
 
 ---
 
 ## 🛠️ Local Setup Instructions
 
-Follow these steps to run the application locally.
-
 ### 1. Prerequisites
-
-- Node.js (v18 or higher)
-- npm or yarn
-- A running local instance of [MongoDB](https://www.mongodb.com/try/download/community) (or a MongoDB Atlas URI)
+- **Node.js**: v18 or higher
+- **MongoDB**: Local instance or MongoDB Atlas URI
+- **NPM**: Package manager
 
 ### 2. Installation
-
-Clone the repository and install the required dependencies:
-
 ```bash
 git clone https://github.com/al-shaimon/smart-inventory-management-system.git
 cd smart-inventory-management-system
 npm install
 ```
 
-### 3. Environment Variables
-
-Create a `.env.local` file in the root directory and add the following keys. Generate a truly random secure string for your session secret.
-
+### 3. Configuration
+Create a `.env.local` file in the root directory:
 ```env
 MONGODB_URI=mongodb://localhost:27017/smart-inventory
-SESSION_SECRET=your_super_secret_32_character_jwt_string_here
+SESSION_SECRET=a_secure_random_32_character_string
 ```
 
-### 4. Database Seeding
+### 4. Database Seeding & Demo
+1. Start the dev server: `npm run dev`
+2. **Initialize Store Data**: Visit [http://localhost:3000/api/seed](http://localhost:3000/api/seed)
+3. **Admin Demo**: `admin@inventory.com` / `Demo@1234` (Full access, Team management)
+4. **Manager Demo**: `manager@inventory.com` / `Demo@1234` (Shared store data, Restricted access)
 
-To quickly populate the database with categories, products, orders, and a demo user account:
+---
 
-1. Start the development server first: `npm run dev`
-2. Open your browser and navigate to the seed route:
-   **[http://localhost:3000/api/seed](http://localhost:3000/api/seed)**
-3. Wait for the `Seed data created successfully` JSON response.
+## 📁 Project Architecture
 
-### 5. Running the Application
+- **`src/app/`**: Next.js App Router (API, Server Actions, Protected Layouts).
+- **`src/models/`**: High-integrity Mongoose schemas with Store scoping.
+- **`src/lib/`**: Core utilities (Strict definitions, Session handling, Activity logging).
+- **`src/components/`**: Modular, premium UI components (Glassmorphic cards, Dynamic sidebars).
 
-Start the Next.js development server:
+## 🛡️ Integrity & Safety
+The project implements **Strict Type Safety** across all API boundaries:
+- **Lean Population**: Optimized database queries with populated nested objects.
+- **Zero `any`**: 100% TypeScript coverage in API routes to prevent production failures.
+- **Middleware Guard**: Edge-level protection ensuring no unauthorized access to store data.
 
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser.
-
-### 6. Test Credentials
-
-If you ran the seed script, you can immediately log in using the demo account or click the "Fill Demo Credentials" button on the login page.
-
-- **Email**: `demo@inventory.com`
-- **Password**: `Demo@1234`
-
-## 📁 Project Structure
-
-- `src/app/`: Next.js App Router containing all pages, loading states, and API endpoints.
-- `src/components/`: Reusable React components (Sidebar, DashboardShell, Toast notifications).
-- `src/lib/`: Core utilities including Database connection singleton, JWT Session logic, Zod validation schemas, and Activity Logging.
-- `src/models/`: Mongoose schemas for User, Product, Category, Order, RestockQueue, and ActivityLog.
+---
 
 ## 🚢 Deployment
+Compatible with **Vercel** and direct **Node.js** environments.
+1. Configure `MONGODB_URI` and `SESSION_SECRET` in environment variables.
+2. Run `npm run build`.
+3. Run `npm run start`.
 
-The application is built to be easily deployed on **Vercel**.
-
-1. Push your code to a GitHub repository.
-2. Link the repository to Vercel.
-3. Add your `MONGODB_URI` (using MongoDB Atlas for production) and `SESSION_SECRET` to the Vercel Environment Variables.
-4. Deploy.
