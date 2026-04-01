@@ -20,7 +20,7 @@ async function verifySession(session: string | undefined) {
 const protectedRoutes = ['/dashboard', '/products', '/categories', '/orders', '/restock', '/activity'];
 const authRoutes = ['/login', '/signup'];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isProtectedRoute = protectedRoutes.some((route) => path.startsWith(route));
   const isAuthRoute = authRoutes.some((route) => path === route);
